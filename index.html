@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Catálogo Mayorista</title>
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json?v=2">
+    <meta name="theme-color" content="#F9F6F0">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icono-192x192.png?v=2">
+    <link rel="apple-touch-icon" href="/icono-192x192.png?v=2">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,600;1,900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'serif': ['"Playfair Display"', 'serif'],
+                        'sans': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            bg: 'var(--brand-bg)',      
+                            card: '#FFFFFF',    
+                            text: 'var(--brand-text)',    
+                            accent: 'var(--brand-accent)',  
+                            border: 'var(--brand-border)'   
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --brand-bg: #F9F6F0;
+            --brand-text: #4A3B32;
+            --brand-accent: #7B3F32;
+            --brand-border: #E6DFD5;
+        }
+
+        body { background-color: var(--brand-bg); color: var(--brand-text); overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; } 
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--brand-border); border-radius: 4px; }
+        
+        body.modo-admin #vista-tienda { display: none !important; }
+        body.modo-admin #vista-admin { display: flex !important; }
+        
+        #vista-tienda { display: flex; flex-direction: column; min-height: 100vh; }
+        #vista-admin { display: none; flex-direction: column; min-height: 100vh; background-color: var(--brand-bg); color: var(--brand-text); font-family: 'Inter', sans-serif;}
+
+        .color-selector input[type="radio"] { display: none; }
+        .color-selector label {
+            display: inline-block; padding: 4px 12px; border: 1px solid var(--brand-border);
+            border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 11px; font-weight: 600; background: white; color: var(--brand-text);
+        }
+        .color-selector input[type="radio"]:checked + label { background-color: var(--brand-accent); color: white; border-color: var(--brand-accent); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 12px 24px; border-radius: 4px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.1); animation: slideIn 0.3s forwards; background: var(--brand-text); color: white; font-size: 12px; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body class="font-sans antialiased pb-24 relative flex flex-col min-h-screen">
+
+    <div id="carga-overlay" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[99999] backdrop-blur-sm">
+        <div class="text-center bg-white p-6 rounded-lg shadow-xl">
+            <i class="fas fa-circle-notch fa-spin text-4xl text-brand-accent mb-3"></i>
+            <p id="carga-texto" class="text-brand-text font-bold text-sm tracking-widest uppercase mt-2">Iniciando Base de Datos...</p>
+        </div>
+    </div>
+
+    <!-- Botón Volver Arriba -->
+    <button id="btn-subir" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-24 right-6 bg-brand-accent hover:opacity-90 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.4)] transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none z-[90000]">
+        <i class="fas fa-chevron-up text-xl"></i>
+    </button>
+
+    <!-- ============================================== -->
+    <!-- 1. VISTA TIENDA -->
+    <!-- ============================================== -->
+    <div id="vista-tienda" class="flex-grow">
+        <!-- BANNER PWA -->
+        <div id="pwa-install-banner" class="hidden bg-brand-accent/10 border border-brand-accent/30 rounded-2xl p-4 mx-6 mt-4 flex items-center justify-between fade-in shadow-sm max-w-7xl lg:mx-auto">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-brand-accent text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-sm">
+                    <img src="/icono-192x192.png?v=2" class="w-full h-full object-cover rounded-xl" onerror="this.outerHTML='<i class=\'fas fa-mobile-alt\'></i>'">
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-brand-text">Instalar Aplicación</h4>
+                    <p class="text-[10px] text-brand-text/60">Acceso directo en tu pantalla</p>
+                </div>
+            </div>
+            <button onclick="ejecutarInstalacionPWA()" class="bg-brand-accent text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md hover:opacity-90 transition">
+                Instalar
+            </button>
+        </div>
+
+        <header class="bg-white border-b border-brand-border sticky top-0 z-40 shadow-sm mt-2">
+            <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+                <div id="header-branding" class="flex items-center select-none"></div>
+                
+                <div class="flex items-center gap-3">
+                    <button onclick="compartirTienda()" class="text-brand-text/50 hover:text-brand-accent text-lg transition bg-brand-bg w-10 h-10 rounded-full flex items-center justify-center border border-brand-border shadow-sm" title="Compartir Catálogo">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                    <!-- BOTÓN ADMIN MEJORADO PARA DUEÑAS TERCAS -->
+                    <button onclick="abrirModalAdmin()" class="text-brand-accent hover:opacity-80 text-xs font-bold transition bg-brand-bg px-3 py-2 h-10 rounded-full flex items-center justify-center border border-brand-border shadow-sm gap-2" title="Panel Admin">
+                        <i class="fas fa-lock"></i> <span class="hidden sm:inline">Admin</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-6 py-8 flex-grow w-full">
+            <div class="mb-8 max-w-lg mx-auto relative">
+                <i class="fas fa-search absolute left-4 top-3.5 text-brand-text/40"></i>
+                <input type="text" id="buscador" oninput="renderProductos()" placeholder="Buscá por SKU o nombre..." class="w-full bg-white border border-brand-border text-brand-text pl-11 pr-10 py-3 rounded-lg outline-none focus:border-brand-accent transition shadow-sm text-sm font-medium">
+                <button onclick="document.getElementById('buscador').value=''; renderProductos();" class="absolute right-4 top-3.5 text-brand-text/30 hover:text-brand-accent transition cursor-pointer">
+                    <i class="fas fa-times-circle text-lg"></i>
+                </button>
+            </div>
+            
+            <div id="grid-productos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5"></div>
+        </main>
+        
+        <!-- FOOTER MARCA GESTO SMART -->
+        <footer class="py-6 text-center mt-auto border-t border-brand-border/30 bg-brand-bg">
+            <div class="flex items-center justify-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity cursor-default">
+                <span class="text-[11px] text-brand-text font-medium tracking-wide">creado con</span>
+                <i class="fas fa-layer-group text-brand-text text-sm"></i>
+                <span class="text-xs text-brand-text font-bold tracking-tight">Gesto Smart</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal Quick View -->
+    <div id="modal-quick-view" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 backdrop-blur-sm z-[99999]">
+        <div class="bg-white border border-brand-border rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden fade-in flex flex-col md:flex-row relative max-h-[90vh] md:max-h-[80vh]">
+            <button onclick="cerrarQuickView()" class="absolute top-4 right-4 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition shadow-md z-10">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="w-full md:w-1/2 bg-stone-100 flex items-center justify-center border-b md:border-b-0 md:border-r border-brand-border relative overflow-hidden">
+                <img id="qv-img" src="" class="w-full h-64 md:h-full object-cover">
+            </div>
+            <div class="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-between gap-4 bg-brand-bg overflow-y-auto">
+                <div>
+                    <span id="qv-sku" class="text-[10px] bg-white border border-brand-border text-brand-text px-2 py-0.5 rounded font-bold uppercase mb-2 inline-block shadow-sm"></span>
+                    <h3 id="qv-nombre" class="font-serif text-2xl md:text-3xl font-black text-brand-text leading-tight mb-4"></h3>
+                </div>
+
+                <div id="qv-colores-container" class="my-auto"></div>
+
+                <div class="pt-6 border-t border-brand-border flex items-center justify-between">
+                    <span class="text-xs font-bold text-brand-text/70 uppercase">Precio Mayorista:</span>
+                    <span id="qv-precio" class="text-3xl font-black text-brand-accent font-sans"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL LOGIN ADMIN -->
+    <div id="modal-login" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[99999] backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 flex flex-col text-center fade-in">
+            <div class="w-16 h-16 bg-brand-accent/10 text-brand-accent rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-brand-accent/30"><i class="fas fa-lock"></i></div>
+            <h3 class="font-serif text-xl text-brand-text mb-2">Acceso Restringido</h3>
+            <p class="text-xs text-brand-text/60 mb-6">Ingresá tu PIN de seguridad para gestionar la tienda.</p>
+            <input type="password" id="admin-pin-input" placeholder="****" maxlength="4" class="w-full text-center text-3xl tracking-[0.5em] border border-brand-border p-3 rounded-xl outline-none focus:border-brand-accent font-bold text-brand-text mb-6 bg-brand-bg" onkeypress="if(event.key === 'Enter') verificarPinAdmin()">
+            <div class="flex gap-3">
+                <button onclick="cerrarModalLogin()" class="flex-1 bg-white text-brand-text/70 border border-brand-border py-3 rounded-xl font-bold hover:bg-stone-100 transition">Cancelar</button>
+                <button onclick="verificarPinAdmin()" class="flex-1 bg-brand-accent text-white py-3 rounded-xl font-bold hover:opacity-90 transition shadow-sm">Ingresar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 2. VISTA ADMIN -->
+    <!-- ============================================== -->
+    <div id="vista-admin" class="flex-grow">
+        <header class="bg-white border-b border-brand-border px-6 py-4 flex flex-col md:flex-row items-start md:items-center justify-between shadow-sm gap-4">
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <div class="w-10 h-10 bg-brand-accent text-white rounded-lg flex items-center justify-center text-lg shrink-0"><i class="fas fa-sliders-h"></i></div>
+                <div>
+                    <h2 class="font-serif text-xl text-brand-text leading-tight">Panel de Control</h2>
+                    <span class="text-[10px] text-brand-text/60 font-bold uppercase tracking-widest">Configuración General</span>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2 w-full md:w-auto mt-2 md:mt-0">
+                <button onclick="compartirTienda()" class="bg-brand-bg hover:bg-stone-200 text-brand-text border border-brand-border px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+                    <i class="fas fa-share-alt mr-2 text-brand-accent"></i> Compartir
+                </button>
+                <button onclick="abrirTiendaNuevaPestana()" class="bg-stone-100 hover:bg-stone-200 text-brand-text border border-brand-border px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+                    <i class="fas fa-external-link-alt mr-2 text-brand-accent"></i> Ver Tienda
+                </button>
+                <button onclick="cerrarSesion()" class="bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Salir
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 max-w-7xl mx-auto w-full p-6 space-y-6 flex-grow">
+            
+            <!-- ACORDEÓN / BOTÓN MANUAL DE USO DIVIDIDO EN 4 -->
+            <div class="bg-brand-accent/5 border border-brand-accent/30 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center justify-between cursor-pointer" onclick="toggleManualUso()">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-brand-accent text-white rounded-lg flex items-center justify-center text-lg shadow-sm">
+                            <i class="fas fa-book-reader"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-serif text-lg text-brand-accent font-bold">📖 Manual de Uso Rápido (¡Leé esto antes de usar!)</h3>
+                            <p class="text-xs text-brand-text/70">Guía paso a paso para no cometer errores en la carga o al compartir.</p>
+                        </div>
+                    </div>
+                    <button class="text-brand-accent text-lg font-bold px-3 py-1 bg-white border border-brand-accent/30 rounded-lg shadow-sm">
+                        <i class="fas fa-chevron-down" id="icono-manual-flecha"></i>
+                    </button>
+                </div>
+
+                <div id="contenido-manual" class="hidden mt-6 pt-6 border-t border-brand-accent/20 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-brand-text">
+                    <div class="bg-white p-5 rounded-xl border border-brand-border shadow-sm space-y-3">
+                        <div class="w-8 h-8 rounded-full bg-brand-accent text-white flex items-center justify-center font-bold">1</div>
+                        <h4 class="font-bold text-sm text-brand-accent">El Excel y los COLORES (¡Muy Importante!)</h4>
+                        <p class="text-brand-text/80 leading-relaxed">Descargá la plantilla con "Bajar Plantilla". Cargá SKU, PRODUCTO y PRECIO. <b>Si el zapato tiene variantes, es OBLIGATORIO escribirlas en la columna COLORES</b> separadas por coma (ej: <i>Negro, Suela, Nude</i>). Si no las escribís ahí, la clienta no podrá elegir el color al querer comprar.</p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-brand-border shadow-sm space-y-3">
+                        <div class="w-8 h-8 rounded-full bg-brand-accent text-white flex items-center justify-center font-bold">2</div>
+                        <h4 class="font-bold text-sm text-brand-accent">Opción A: Cargar fotos a mano (Recomendado)</h4>
+                        <p class="text-brand-text/80 leading-relaxed">¿No querés renegar con los nombres de los archivos? Hacé clic en el ícono del <b>Lápiz (Editar)</b> <i class="fas fa-pencil-alt text-brand-accent mx-1"></i> al lado de cualquier producto en la lista de abajo. Se abrirá una ventana donde podrás subir y cambiar la foto exacta de cada color individualmente haciendo clic en <b>"Subir Foto"</b>.</p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-brand-border shadow-sm space-y-3">
+                        <div class="w-8 h-8 rounded-full bg-brand-accent text-white flex items-center justify-center font-bold">3</div>
+                        <h4 class="font-bold text-sm text-brand-accent">Opción B: Subida Rápida (Masiva)</h4>
+                        <p class="text-brand-text/80 leading-relaxed">Si querés subir todo de golpe con el botón "Subir Fotos", las imágenes en tu compu <b>DEBEN</b> llamarse igual que el código SKU y el color.<br><br><i>Ejemplo si el SKU es 5:</i><br>• <code>5 negro.jpg</code><br>• <code>5 animal print.jpg</code></p>
+                    </div>
+
+                    <div class="bg-brand-accent/10 p-5 rounded-xl border border-brand-accent/30 shadow-sm space-y-3">
+                        <div class="w-8 h-8 rounded-full bg-brand-accent text-white flex items-center justify-center font-bold"><i class="fas fa-share-alt"></i></div>
+                        <h4 class="font-bold text-sm text-brand-accent">⚠️ Cómo compartir tu Catálogo</h4>
+                        <p class="text-brand-text/80 leading-relaxed">Para enviarle la tienda a tus clientes, <b>USÁ SIEMPRE EL BOTÓN "COMPARTIR"</b> que está arriba en este panel. Ese botón envía el link público y limpio a tus clientas.<br><br><b>NUNCA copies el link de la barra de arriba del navegador</b> porque les estarías mandando el link privado que pide contraseña.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN SEGURIDAD (BLINDADA PARA EL CLIENTE) -->
+            <div class="bg-white border border-brand-border rounded-xl p-6 shadow-sm space-y-4">
+                <h3 class="font-serif text-lg text-brand-text">⚙️ Identidad y Seguridad</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-brand-text/70 mb-1">Paleta Color</label>
+                        <select id="select-paleta" class="w-full border border-brand-border p-2.5 rounded-lg text-sm outline-none focus:border-brand-accent bg-white">
+                            <option value="suede">Deep Suede Brown (Café)</option>
+                            <option value="terracota">Warm Terracotta (Terracota)</option>
+                            <option value="olive">Olive Green (Verde Oliva)</option>
+                            <option value="yute">Creamy Jute (Yute/Crema)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-brand-accent mb-1">PIN Admin (4 Dígitos)</label>
+                        <input type="password" id="input-pin" maxlength="4" placeholder="1234" class="w-full border border-brand-border p-2.5 rounded-lg text-sm outline-none focus:border-brand-accent text-brand-accent font-bold text-center tracking-widest">
+                    </div>
+                </div>
+                <div class="flex justify-start pt-2">
+                    <button onclick="guardarConfiguracion()" class="bg-brand-text hover:bg-brand-accent text-white px-6 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition shadow-sm">Guardar Cambios</button>
+                </div>
+            </div>
+
+            <div class="bg-white border border-brand-border rounded-xl p-6 shadow-sm flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="abrirModalNuevoProducto()" class="bg-brand-text hover:bg-brand-accent text-white px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+                        <i class="fas fa-plus mr-2"></i> Nuevo Artículo Manual
+                    </button>
+                    <div class="w-px bg-brand-border mx-2"></div>
+                    <label class="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center shadow-sm">
+                        <i class="fas fa-file-excel mr-2"></i> Subir Excel
+                        <input type="file" accept=".xlsx" class="hidden" onchange="importarExcel(event)">
+                    </label>
+                    <button onclick="generarExcelMuestra()" class="bg-stone-100 hover:bg-stone-200 text-brand-text px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center border border-brand-border">
+                        <i class="fas fa-download mr-2 text-brand-accent"></i> Bajar Plantilla
+                    </button>
+                    <button onclick="vaciarDB()" class="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center border border-red-200">
+                        <i class="fas fa-trash-alt mr-2"></i> Vaciar DB
+                    </button>
+                </div>
+                
+                <div class="bg-brand-bg border border-brand-border p-3 rounded-lg flex items-center gap-3">
+                    <div class="text-xs">
+                        <span class="font-bold block text-brand-text">Subida Masiva de Fotos</span>
+                        <span class="text-[10px] text-brand-text/60">Inteligente: (ej. 4 negro.jpg)</span>
+                    </div>
+                    <label class="bg-brand-accent hover:opacity-90 text-white px-4 py-2 rounded-md text-xs font-bold cursor-pointer transition shadow-sm">
+                        <i class="fas fa-arrow-up mr-2"></i> Subir Fotos
+                        <input type="file" id="input-fotos-masivas" accept="image/*" multiple class="hidden" onchange="subirFotosMasivas(event)">
+                    </label>
+                </div>
+            </div>
+
+            <div class="bg-white border border-brand-border rounded-xl overflow-hidden shadow-sm mb-4">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-brand-text">
+                        <thead class="bg-stone-50 text-brand-text/60 font-semibold border-b border-brand-border text-[11px] uppercase tracking-wider">
+                            <tr>
+                                <th class="px-4 py-3 w-16">Foto</th>
+                                <th class="px-4 py-3 w-20">SKU</th>
+                                <th class="px-4 py-3">Producto</th>
+                                <th class="px-4 py-3">Precio</th>
+                                <th class="px-4 py-3">Colores / Variantes</th>
+                                <th class="px-4 py-3 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-admin" class="divide-y divide-brand-border/40"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <!-- FOOTER MARCA GESTO SMART ADMIN -->
+        <footer class="py-6 text-center mt-auto border-t border-brand-border/50 bg-stone-50">
+            <div class="flex items-center justify-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity cursor-default">
+                <span class="text-[11px] text-brand-text font-medium tracking-wide">creado con</span>
+                <i class="fas fa-layer-group text-brand-text text-sm"></i>
+                <span class="text-xs text-brand-text font-bold tracking-tight">Gesto Smart</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- MODAL EDICIÓN Y CREACIÓN MANUAL -->
+    <div id="modal-edicion" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[99999] backdrop-blur-sm p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-5 border-b border-brand-border flex justify-between items-center bg-brand-bg">
+                <h3 id="modal-titulo" class="font-serif text-xl text-brand-text">✏️ Editar Modelo</h3>
+                <button onclick="cerrarModalEdicion()" class="text-brand-text/50 hover:text-brand-accent text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="p-5 overflow-y-auto space-y-4 flex-grow">
+                <input type="hidden" id="edit-id">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-text/70 mb-1">SKU *</label>
+                        <input type="text" id="edit-sku" class="w-full border border-brand-border p-2 rounded-lg text-sm outline-none focus:border-brand-accent font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-text/70 mb-1">Precio Mayorista ($) *</label>
+                        <input type="number" id="edit-precio" class="w-full border border-brand-border p-2 rounded-lg text-sm outline-none focus:border-brand-accent">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-text/70 mb-1">Nombre del Producto *</label>
+                    <input type="text" id="edit-nombre" class="w-full border border-brand-border p-2 rounded-lg text-sm outline-none focus:border-brand-accent">
+                </div>
+
+                <div id="grupo-crear-colores" class="hidden">
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-text/70 mb-1">Colores / Variantes (Separados por coma) *</label>
+                    <input type="text" id="edit-colores-texto" class="w-full border border-brand-border p-2 rounded-lg text-sm outline-none focus:border-brand-accent" placeholder="Ej: Negro, Blanco, Suela">
+                </div>
+
+                <div id="grupo-editar-fotos" class="border-t border-brand-border pt-4 mt-4">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-brand-text mb-3">🖼️ Fotos por Color (Carga Individual)</label>
+                    <div id="edit-colores-container" class="space-y-3"></div>
+                </div>
+            </div>
+            
+            <div class="p-5 border-t border-brand-border bg-stone-50 flex justify-end gap-3">
+                <button onclick="cerrarModalEdicion()" class="px-5 py-2.5 rounded-lg text-xs font-bold border border-brand-border text-brand-text hover:bg-brand-bg transition">Cancelar</button>
+                <button onclick="guardarEdicionProducto()" class="bg-brand-accent hover:opacity-90 text-white px-5 py-2.5 rounded-lg text-xs font-bold transition shadow-sm"><i class="fas fa-save mr-2"></i>Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script>
+        // Función Manual de Uso Acordeón
+        function toggleManualUso() {
+            const cont = document.getElementById('contenido-manual');
+            const icono = document.getElementById('icono-manual-flecha');
+            if (cont.classList.contains('hidden')) {
+                cont.classList.remove('hidden');
+                icono.classList.remove('fa-chevron-down');
+                icono.classList.add('fa-chevron-up');
+            } else {
+                cont.classList.add('hidden');
+                icono.classList.remove('fa-chevron-up');
+                icono.classList.add('fa-chevron-down');
+            }
+        }
+
+        // Modal Utilities
+        function abrirModalUI(id) { const el = document.getElementById(id); if(el){ el.classList.remove('hidden'); el.classList.add('flex'); } }
+        function cerrarModal(id) { const el = document.getElementById(id); if(el){ el.classList.add('hidden'); el.classList.remove('flex'); } }
+
+        function compartirTienda() {
+            const shareData = {
+                title: db.config.nombre || 'Mi Tienda',
+                text: `Mirá nuestro catálogo online:`,
+                url: window.location.href.split('?')[0] // SIEMPRE COMPARTE LIMPIO SIN ?admin
+            };
+            if (navigator.share) {
+                navigator.share(shareData).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(window.location.href.split('?')[0]);
+                toast('¡Link del catálogo copiado!');
+            }
+        }
+
+        function abrirTiendaNuevaPestana() {
+            // Se le agrega un parámetro especial para evitar que el Modo Dios la vuelva a meter al admin
+            const urlBase = window.location.href.split('?')[0];
+            window.open(urlBase + '?vista=tienda', '_blank');
+        }
+
+        function abrirModalAdmin() {
+            document.getElementById('admin-pin-input').value = '';
+            abrirModalUI('modal-login');
+            setTimeout(() => document.getElementById('admin-pin-input').focus(), 100);
+        }
+
+        function cerrarModalLogin() {
+            cerrarModal('modal-login');
+        }
+
+        function verificarPinAdmin() {
+            const pin = document.getElementById('admin-pin-input').value;
+            const pinValido = db.config.pinAdmin || '1234';
+            if (pin === pinValido) {
+                cerrarModalLogin();
+                document.body.classList.add('modo-admin');
+                
+                // MODO DIOS: GUARDA LA SESIÓN EN ESTE DISPOSITIVO
+                localStorage.setItem('hippie_admin_auth', 'true');
+                
+                toast('🔓 Modo Administrador Activado');
+            } else {
+                toast('❌ PIN Incorrecto');
+                document.getElementById('admin-pin-input').value = '';
+            }
+        }
+
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const banner = document.getElementById('pwa-install-banner');
+            if (banner) banner.classList.remove('hidden');
+        });
+
+        function ejecutarInstalacionPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('pwa-install-banner').classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => console.log('PWA SW Error:', err));
+            });
+        }
+
+        // Flecha de Scroll Automática
+        window.addEventListener('scroll', () => {
+            const btn = document.getElementById('btn-subir');
+            if (window.scrollY > 300) {
+                btn.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+                btn.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+            } else {
+                btn.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+                btn.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+            }
+        });
+
+        function comprimirImagen(file, callback, maxSize = 600, format = 'image/jpeg') {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width; let height = img.height;
+                        if (width > height && width > maxSize) { height *= maxSize / width; width = maxSize; } 
+                        else if (height > maxSize) { width *= maxSize / height; height = maxSize; }
+                        canvas.width = width; canvas.height = height;
+                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+                        const dataUrl = canvas.toDataURL(format, 0.7); 
+                        if (dataUrl === "data:,") throw new Error("Canvas vacio");
+                        callback(dataUrl);
+                    } catch(err) { callback(e.target.result); }
+                }
+                img.onerror = function() { callback(e.target.result); }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function getPlaceholder(text) {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="500"><rect width="100%" height="100%" fill="#E6DFD5"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="bold" fill="#4A3B32">${text}</text></svg>`;
+            return "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg)));
+        }
+
+        const limpiarTexto = (str) => { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[-_\s]+/g, ''); };
+        const toConsonants = (str) => { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[aeiouáéíóúü\s-_\W]/g, ''); };
+
+        const paletasPantone = {
+            suede: { bg: '#F2E8DA', text: '#593C31', accent: '#7B3F32', border: '#DFD0BB' },
+            terracota: { bg: '#FDF8F5', text: '#B35A49', accent: '#D97757', border: '#E8D4CE' },
+            olive: { bg: '#F4F5F0', text: '#5A6039', accent: '#8A915C', border: '#D5D8C8' },
+            yute: { bg: '#FAF6F0', text: '#4A3B32', accent: '#CB6D3E', border: '#E6DFD5' }
+        };
+
+        let db = { config: {}, productos: [] };
+        let seleccionActual = {}; 
+
+        function initApp() {
+            document.getElementById('carga-overlay').style.display = 'none';
+            if(!db.config) db.config = {};
+            
+            // HARDCODE ABSOLUTO DE MARCA PARA HIPPIE JAIPUR
+            // SE AGREGO ?v=2 PARA ROMPER LA CACHÉ
+            db.config.nombre = 'Hippie Jaipur';
+            db.config.logo = '/icono-192x192.png?v=2';
+            
+            if(!db.config.paleta) db.config.paleta = 'suede';
+            if(!db.config.pinAdmin) db.config.pinAdmin = '1234';
+            
+            if(db.productos.length === 0) {
+                db.productos = [
+                    { id: '1', sku: '4', nombre: 'Zueco Roma', precioBase: 69900, colores: [{ id: 'c0', nombre: 'Nude', img: '' }, { id: 'c1', nombre: 'Negro', img: '' }] },
+                    { id: '2', sku: '5', nombre: 'Sandalia Tulum', precioBase: 59999, colores: [{ id: 'c0', nombre: 'Negro', img: '' }, { id: 'c1', nombre: 'Animal Print', img: '' }, { id: 'c2', nombre: 'Rafia', img: '' }, { id: 'c4', nombre: 'Suela', img: '' }, { id: 'c5', nombre: 'Plateado', img: '' }] }
+                ];
+            }
+
+            actualizarIdentidadVisual();
+            db.productos.forEach(p => {
+                if(p.colores && p.colores.length > 0) {
+                    if(!seleccionActual[p.id]) seleccionActual[p.id] = { color: p.colores[0].id };
+                }
+            });
+            renderProductos(); renderStockAdmin();
+
+            // CHEQUEO MODO DIOS O LINK MÁGICO Y PASE VIP
+            if (window.location.search.includes('vista=tienda')) {
+                // Modo espectador: ignorar auto-login de Modo Dios para que pueda ver su tienda
+                document.body.classList.remove('modo-admin');
+            } else if (localStorage.getItem('hippie_admin_auth') === 'true') {
+                document.body.classList.add('modo-admin');
+            } else if (window.location.search.includes('admin')) {
+                abrirModalAdmin();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('carga-overlay').style.display='flex';
+            localforage.getItem('gesto_hippie_idb').then(function(value) {
+                if (value && value.productos) { db = value; }
+                initApp();
+            }).catch(function(err) { initApp(); });
+        });
+
+        function salvar() {
+            db.config.nombre = 'Hippie Jaipur';
+            db.config.logo = '/icono-192x192.png?v=2';
+            
+            localforage.setItem('gesto_hippie_idb', db).then(() => {
+                if(typeof firestoreDb !== 'undefined' && firestoreDb) {
+                    firestoreDb.collection("lite_erp").doc("catalogo_nare").set(db).catch(e => console.error("Error Firebase:", e));
+                }
+            }).catch(function(err) { toast("❌ Error al guardar base de datos."); });
+        }
+
+        // Firebase Sync
+        const firebaseConfig = {
+            apiKey: "AIzaSyAUigoEaedboUV_dIcD1k-MYgZuFa1nWKE",
+            authDomain: "catalogo-hippie.firebaseapp.com",
+            projectId: "catalogo-hippie",
+            storageBucket: "catalogo-hippie.firebasestorage.app",
+            messagingSenderId: "99839074190",
+            appId: "1:99839074190:web:d70c4f09c5577bcc100edf"
+        };
+        
+        let firestoreDb = null;
+        try { 
+            if (typeof firebase !== 'undefined') { 
+                firebase.initializeApp(firebaseConfig); 
+                firestoreDb = firebase.firestore(); 
+                firebase.auth().signInAnonymously().catch(err => console.warn("Error en Auth:", err));
+                
+                firestoreDb.collection("lite_erp").doc("catalogo_nare").onSnapshot(doc => {
+                    if(doc.exists) { 
+                        db = doc.data();
+                        db.config.nombre = 'Hippie Jaipur';
+                        db.config.logo = '/icono-192x192.png?v=2';
+                        actualizarIdentidadVisual();
+                        renderProductos(); renderStockAdmin();
+                    }
+                });
+            } 
+        } catch(err) {}
+
+        function aplicarPaleta(nombre) {
+            const p = paletasPantone[nombre] || paletasPantone.suede;
+            document.documentElement.style.setProperty('--brand-bg', p.bg);
+            document.documentElement.style.setProperty('--brand-text', p.text);
+            document.documentElement.style.setProperty('--brand-accent', p.accent);
+            document.documentElement.style.setProperty('--brand-border', p.border);
+        }
+
+        function actualizarIdentidadVisual() {
+            aplicarPaleta(db.config.paleta);
+            document.getElementById('page-title').innerText = `${db.config.nombre} | Catálogo Mayorista`;
+            const headerBranding = document.getElementById('header-branding');
+            
+            if(db.config.logo && db.config.logo.length > 5) {
+                headerBranding.innerHTML = `<div class="w-12 h-12 rounded-full border-2 border-brand-border flex items-center justify-center overflow-hidden bg-brand-bg mr-3 shrink-0"><img src="${db.config.logo}" class="w-full h-full object-cover bg-white"></div><div><h1 class="font-serif text-2xl text-brand-text leading-none">${db.config.nombre}</h1><span class="text-[10px] uppercase tracking-widest text-brand-text/60 font-bold">Venta Mayorista</span></div>`;
+            } else {
+                const palabras = db.config.nombre.trim().split(' ');
+                let htmlLogo = palabras.length > 1 ? `<span class="block">${palabras[0]}</span><span class="block text-[0.65em] opacity-90">${palabras.slice(1).join(' ')}</span>` : `<span class="block">${palabras[0]}</span>`;
+                headerBranding.innerHTML = `<div class="font-serif font-black uppercase text-brand-text leading-none text-center border-y-2 border-brand-text py-1.5 px-2 tracking-widest text-xl">${htmlLogo}</div><div class="ml-3 pl-3 border-l border-brand-border flex items-center"><span class="text-[9px] uppercase tracking-widest text-brand-text/60 font-bold leading-tight">Venta<br>Mayorista</span></div>`;
+            }
+            
+            document.getElementById('select-paleta').value = db.config.paleta;
+            document.getElementById('input-pin').value = db.config.pinAdmin || '1234';
+        }
+
+        function guardarConfiguracion() {
+            db.config.paleta = document.getElementById('select-paleta').value;
+            db.config.pinAdmin = document.getElementById('input-pin').value.trim() || '1234';
+            salvar(); actualizarIdentidadVisual(); toast('¡Configuración guardada! ✨');
+        }
+
+        const formatMoney = (monto) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(monto);
+
+        function abrirQuickView(id) {
+            const p = db.productos.find(x => x.id === id); if(!p) return;
+            const state = seleccionActual[id] || { color: p.colores[0].id };
+            const colorActivo = p.colores.find(c => c.id === state.color) || p.colores[0];
+            
+            let img = colorActivo.img;
+            if(!img || img.length < 100) img = getPlaceholder('SKU ' + p.sku + (colorActivo.nombre!=='General' ? ' '+colorActivo.nombre : ''));
+
+            document.getElementById('qv-img').src = img;
+            document.getElementById('qv-sku').innerText = 'SKU: ' + p.sku;
+            document.getElementById('qv-nombre').innerText = p.nombre;
+            document.getElementById('qv-precio').innerText = formatMoney(p.precioBase);
+
+            const colContainer = document.getElementById('qv-colores-container');
+            if (p.colores.length > 0 && p.colores[0].nombre !== 'General') {
+                colContainer.innerHTML = `
+                    <span class="text-[10px] uppercase tracking-widest text-brand-text/60 font-bold block mb-2">Variante: <span class="text-brand-accent uppercase" id="qv-label-color">${colorActivo.nombre}</span></span>
+                    <div class="flex gap-2 color-selector flex-wrap">
+                        ${p.colores.map(c => `
+                            <div>
+                                <input type="radio" name="qv-color-${p.id}" id="qv-col-${p.id}-${c.id}" value="${c.id}" ${c.id === state.color ? 'checked' : ''} onchange="qvCambiarColor('${p.id}', '${c.id}', '${c.nombre}', '${c.img || ''}')">
+                                <label for="qv-col-${p.id}-${c.id}">${c.nombre}</label>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                colContainer.style.display = 'block';
+            } else { colContainer.style.display = 'none'; }
+
+            abrirModalUI('modal-quick-view');
+        }
+
+        function cerrarQuickView() { cerrarModal('modal-quick-view'); }
+
+        function qvCambiarColor(prodId, colorId, colorNombre, imgUrl) {
+            cambiarColor(prodId, colorId, colorNombre, imgUrl);
+            const imgEl = document.getElementById('qv-img');
+            const p = db.productos.find(x => x.id === prodId);
+            if(imgUrl && imgUrl.length > 100) imgEl.src = imgUrl; 
+            else imgEl.src = getPlaceholder('SKU ' + (p ? p.sku : '') + ' ' + colorNombre);
+            const labelEl = document.getElementById('qv-label-color');
+            if(labelEl) labelEl.innerText = colorNombre;
+        }
+
+        function renderProductos() {
+            const grid = document.getElementById('grid-productos');
+            const term = document.getElementById('buscador').value.toLowerCase();
+            const filtrados = db.productos.filter(p => p.nombre.toLowerCase().includes(term) || p.sku.toLowerCase().includes(term));
+
+            grid.innerHTML = filtrados.length ? filtrados.map(p => {
+                if(!seleccionActual[p.id]) seleccionActual[p.id] = { color: p.colores[0].id };
+                const state = seleccionActual[p.id]; const colorActivo = p.colores.find(c => c.id === state.color) || p.colores[0];
+                let imgFinal = colorActivo.img; let phText = 'SKU ' + p.sku;
+                if (colorActivo.nombre !== 'General') phText += ' ' + colorActivo.nombre;
+                if(!imgFinal || imgFinal.length < 100) imgFinal = getPlaceholder(phText);
+                
+                return `
+                <div class="bg-white border border-brand-border rounded-xl shadow-sm overflow-hidden flex flex-col">
+                    <div class="aspect-[4/5] bg-stone-100 relative overflow-hidden border-b border-brand-border group cursor-pointer" onclick="abrirQuickView('${p.id}')">
+                        <img src="${imgFinal}" alt="${p.nombre}" class="w-full h-full object-cover transition-all duration-300 group-hover:scale-105 group-hover:opacity-90" id="img-prod-${p.id}" onerror="this.src='${getPlaceholder('SKU '+p.sku)}'">
+                        <div class="absolute inset-0 bg-black/10 hidden group-hover:flex items-center justify-center transition">
+                            <span class="bg-white text-brand-text text-[10px] font-bold px-3 py-1.5 rounded shadow-lg uppercase tracking-wider"><i class="fas fa-search-plus mr-1"></i> Ver Detalle</span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 flex flex-col flex-grow justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[9px] bg-stone-100 text-brand-text font-bold px-2 py-0.5 rounded uppercase border border-brand-border">Catálogo</span>
+                                <span class="text-[9px] text-brand-text/50 font-bold">SKU: ${p.sku}</span>
+                            </div>
+                            <h2 class="font-sans text-xs font-bold text-brand-text mb-2 leading-snug line-clamp-2">${p.nombre}</h2>
+                            
+                            ${p.colores.length > 0 && p.colores[0].nombre !== 'General' ? `
+                            <div class="mb-4">
+                                <span class="text-[9px] uppercase tracking-widest text-brand-text/60 font-bold block mb-1">Variante: <span class="text-brand-accent uppercase" id="label-color-${p.id}">${colorActivo.nombre}</span></span>
+                                <div class="flex gap-1 color-selector flex-wrap">
+                                    ${p.colores.map(c => `
+                                        <div>
+                                            <input type="radio" name="color-${p.id}" id="col-${p.id}-${c.id}" value="${c.id}" ${c.id === state.color ? 'checked' : ''} onchange="cambiarColor('${p.id}', '${c.id}', '${c.nombre}', '${c.img || ''}')">
+                                            <label for="col-${p.id}-${c.id}">${c.nombre}</label>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>` : ''}
+                        </div>
+
+                        <div class="mb-1 flex items-center justify-between border-t border-brand-border pt-3">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase">Precio</span>
+                            <span class="text-base font-black text-brand-accent">${formatMoney(p.precioBase)}</span>
+                        </div>
+                    </div>
+                </div>
+            `}).join('') : '<div class="col-span-full py-20 text-center text-brand-text/40 font-serif text-xl">No encontramos productos para tu búsqueda...</div>';
+        }
+
+        function cambiarColor(prodId, colorId, colorNombre, imgUrl) {
+            seleccionActual[prodId].color = colorId; const p = db.productos.find(x => x.id === prodId); const imgEl = document.getElementById(`img-prod-${prodId}`);
+            if(imgEl) {
+                if(imgUrl && imgUrl.length > 100) imgEl.src = imgUrl;
+                else imgEl.src = getPlaceholder('SKU ' + (p ? p.sku : '') + ' ' + colorNombre);
+            }
+            const labelEl = document.getElementById(`label-color-${prodId}`); if(labelEl) labelEl.innerText = colorNombre;
+        }
+
+        function generarExcelMuestra() {
+            const data = [{ "SKU": "4", "PRODUCTO": "Zueco Roma", "PRECIO": 69900, "COLORES": "Nude, Negro" }];
+            const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(data);
+            ws['!cols'] = [{wch:10}, {wch:40}, {wch:12}, {wch:25}];
+            XLSX.utils.book_append_sheet(wb, ws, "Catalogo"); XLSX.writeFile(wb, "Plantilla_Catalogo.xlsx");
+        }
+
+        function subirFotosMasivas(e) {
+            const files = e.target.files; if(!files.length) return;
+            document.getElementById('carga-texto').innerText = "Procesando " + files.length + " fotos...";
+            document.getElementById('carga-overlay').style.display='flex';
+            let cargadas = 0; let vinculadas = 0;
+            
+            const prodsSorted = [...db.productos].sort((a,b) => String(b.sku).length - String(a.sku).length);
+
+            Array.from(files).forEach(file => {
+                comprimirImagen(file, (base64Comprimido) => {
+                    let nombreLimpio = file.name.substring(0, file.name.lastIndexOf('.')); if(!nombreLimpio) nombreLimpio = file.name;
+                    nombreLimpio = nombreLimpio.toLowerCase().trim(); 
+
+                    for (let p of prodsSorted) {
+                        let skuLower = String(p.sku).trim().toLowerCase();
+                        
+                        if (nombreLimpio === skuLower || nombreLimpio.startsWith(skuLower + '-') || nombreLimpio.startsWith(skuLower + ' ') || nombreLimpio.startsWith(skuLower + '_')) {
+                            
+                            let resto = nombreLimpio.substring(skuLower.length).trim();
+                            resto = resto.replace(/^[-_\s]+/, ''); 
+                            
+                            let bestColorIdx = -1;
+                            let bestScore = -1;
+
+                            if (resto === '') {
+                                bestColorIdx = 0;
+                            } else {
+                                for (let i = 0; i < p.colores.length; i++) {
+                                    let cClean = limpiarTexto(p.colores[i].nombre);
+                                    let rClean = limpiarTexto(resto);
+
+                                    let posIdx = parseInt(resto);
+                                    if (!isNaN(posIdx) && posIdx > 0 && posIdx.toString() === resto) {
+                                        if(i === posIdx - 1) { bestColorIdx = i; bestScore = 9999; break; }
+                                        continue;
+                                    }
+
+                                    if (cClean === rClean) { bestColorIdx = i; bestScore = 1000; break; }
+
+                                    if (rClean.length >= 3 && cClean.length >= 3 && (rClean.includes(cClean) || cClean.includes(rClean))) {
+                                        let score = 500 + cClean.length; 
+                                        if (score > bestScore) { bestColorIdx = i; bestScore = score; }
+                                    }
+                                    
+                                    if (rClean.length >= 4 && cClean.length >= 4 && (cClean.startsWith(rClean.substring(0,4)) || rClean.startsWith(cClean.substring(0,4)))) {
+                                        let score = 300 + cClean.length;
+                                        if (score > bestScore) { bestColorIdx = i; bestScore = score; }
+                                    }
+                                }
+                            }
+
+                            if (bestColorIdx !== -1) {
+                                p.colores[bestColorIdx].img = base64Comprimido;
+                                vinculadas++;
+                                break; 
+                            }
+                        }
+                    }
+                    
+                    cargadas++; document.getElementById('carga-texto').innerText = "Procesando " + cargadas + " de " + files.length + "...";
+                    if(cargadas === files.length) {
+                        salvar(); setTimeout(() => { initApp(); document.getElementById('carga-overlay').style.display='none'; document.getElementById('input-fotos-masivas').value = ''; if(vinculadas === 0) toast(`❌ Las fotos no coincidieron con los SKU.`); else toast(`¡Terminado! ${vinculadas} fotos vinculadas 📸`); }, 500);
+                    }
+                });
+            });
+        }
+
+        function importarExcel(e) {
+            let f = e.target.files[0]; if(!f) return;
+            document.getElementById('carga-texto').innerText = "Procesando Excel..."; document.getElementById('carga-overlay').style.display='flex';
+            let r = new FileReader();
+            r.onload = function(evt) {
+                try {
+                    let d = new Uint8Array(evt.target.result); let wb = XLSX.read(d, {type:'array'}); let sheet = wb.Sheets[wb.SheetNames[0]]; let json = XLSX.utils.sheet_to_json(sheet, {header:1}); let h = json[0].map(x=>String(x||'').toUpperCase().trim());
+                    let cSku = h.indexOf('SKU'), cProd = h.indexOf('PRODUCTO'), cPre = h.indexOf('PRECIO'), cCol = h.indexOf('COLORES');
+                    if(cSku===-1 || cProd===-1 || cPre===-1) throw new Error("Faltan columnas (SKU, PRODUCTO, PRECIO).");
+                    let nuevosProductos = [];
+                    for(let i=1; i<json.length; i++) {
+                        let row = json[i]; if(!row || !row[cProd]) continue;
+                        let sku = String(row[cSku]||i).trim(); let nombre = String(row[cProd]).trim(); let precio = parseFloat(String(row[cPre]).replace(',','.')) || 0;
+                        let rawColores = cCol !== -1 ? String(row[cCol]||'General').split(',').map(x=>x.trim()).filter(x=>x) : ['General'];
+                        let prodAnterior = db.productos.find(p => String(p.sku).trim().toLowerCase() === sku.toLowerCase());
+                        let arrayColores = rawColores.map((c, idx) => {
+                            let imgAnterior = ''; if(prodAnterior && prodAnterior.colores && prodAnterior.colores[idx]) imgAnterior = prodAnterior.colores[idx].img; else if(idx === 0 && prodAnterior && prodAnterior.colores[0]) imgAnterior = prodAnterior.colores[0].img;
+                            return { id: 'c-' + idx, nombre: c, img: imgAnterior };
+                        });
+                        nuevosProductos.push({ id: 'id-' + Date.now() + i, sku: sku, nombre: nombre, precioBase: precio, colores: arrayColores });
+                    }
+                    if(nuevosProductos.length > 0) { db.productos = nuevosProductos; salvar(); initApp(); toast("Excel importado ✅"); } else toast("El Excel está vacío.");
+                } catch(err) { toast("❌ Error: " + err.message); } finally { document.getElementById('carga-overlay').style.display='none'; e.target.value=''; }
+            }; r.readAsArrayBuffer(f);
+        }
+
+        function abrirModalNuevoProducto() {
+            document.getElementById('modal-titulo').innerHTML = '✨ Crear Nuevo Artículo';
+            document.getElementById('edit-id').value = ''; document.getElementById('edit-sku').value = ''; document.getElementById('edit-sku').readOnly = false; document.getElementById('edit-sku').classList.remove('bg-stone-100');
+            document.getElementById('edit-nombre').value = ''; document.getElementById('edit-precio').value = ''; 
+            document.getElementById('grupo-crear-colores').classList.remove('hidden'); document.getElementById('edit-colores-texto').value = 'General';
+            document.getElementById('grupo-editar-fotos').classList.add('hidden');
+            
+            document.getElementById('modal-edicion').classList.remove('hidden'); 
+            document.getElementById('modal-edicion').classList.add('flex');
+        }
+
+        function abrirModalEdicion(id) {
+            const p = db.productos.find(x => x.id === id); if(!p) return;
+            document.getElementById('modal-titulo').innerHTML = '✏️ Editar y Subir Fotos';
+            document.getElementById('edit-id').value = p.id; document.getElementById('edit-sku').value = p.sku; document.getElementById('edit-sku').readOnly = true; document.getElementById('edit-sku').classList.add('bg-stone-100');
+            document.getElementById('edit-nombre').value = p.nombre; document.getElementById('edit-precio').value = p.precioBase; 
+            document.getElementById('grupo-crear-colores').classList.add('hidden'); document.getElementById('grupo-editar-fotos').classList.remove('hidden');
+            const cCont = document.getElementById('edit-colores-container');
+            cCont.innerHTML = p.colores.map((c, idx) => {
+                let imgPrev = c.img; if(!imgPrev || imgPrev.length<100) imgPrev = getPlaceholder('SKU '+p.sku+' '+c.nombre);
+                return `
+                <div class="flex items-center gap-3 bg-white p-2 border border-brand-border rounded">
+                    <img id="edit-img-prev-${idx}" src="${imgPrev}" class="w-12 h-12 object-cover rounded border border-stone-200">
+                    <div class="flex-grow">
+                        <span class="text-xs font-bold text-brand-text block mb-1">Color: ${c.nombre}</span>
+                        <label class="inline-block bg-brand-accent hover:opacity-90 text-white px-3 py-1.5 rounded text-[10px] font-bold cursor-pointer transition shadow-sm">
+                            <i class="fas fa-cloud-upload-alt mr-1"></i> Subir Foto <input type="file" accept="image/*" class="hidden" onchange="subirFotoIndividual(event, '${p.id}', ${idx})">
+                        </label>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            
+            document.getElementById('modal-edicion').classList.remove('hidden'); 
+            document.getElementById('modal-edicion').classList.add('flex');
+        }
+
+        function cerrarModalEdicion() { 
+            cerrarModal('modal-edicion');
+        }
+
+        function subirFotoIndividual(e, prodId, colorIndex) {
+            const file = e.target.files[0]; if(!file) return;
+            comprimirImagen(file, (base64) => { const p = db.productos.find(x => x.id === prodId); if(p && p.colores[colorIndex]) { p.colores[colorIndex].img = base64; document.getElementById(`edit-img-prev-${colorIndex}`).src = base64; } });
+        }
+
+        function guardarEdicionProducto() {
+            const id = document.getElementById('edit-id').value; const sku = document.getElementById('edit-sku').value.trim(); const nombre = document.getElementById('edit-nombre').value.trim(); const precio = parseFloat(document.getElementById('edit-precio').value) || 0;
+            if(!sku || !nombre) return toast('SKU y Nombre son obligatorios.');
+
+            if (id) {
+                const p = db.productos.find(x => x.id === id); if(!p) return;
+                p.nombre = nombre; p.precioBase = precio; toast('Cambios guardados ✏️');
+            } else {
+                const existe = db.productos.find(x => String(x.sku).toLowerCase() === sku.toLowerCase());
+                if(existe) return toast('❌ El SKU ya existe.');
+                let coloresCrudos = document.getElementById('edit-colores-texto').value.split(',').map(x=>x.trim()).filter(x=>x); if(coloresCrudos.length === 0) coloresCrudos = ['General'];
+                let arrayColores = coloresCrudos.map((c, idx) => { return { id: 'c-' + idx, nombre: c, img: '' }; });
+                db.productos.unshift({ id: 'id-' + Date.now(), sku: sku, nombre: nombre, precioBase: precio, colores: arrayColores });
+                toast('¡Producto creado! Ahora subile las fotos. 🆕');
+            }
+            salvar(); initApp(); cerrarModalEdicion(); 
+        }
+
+        function eliminarProducto(id) { if(confirm('¿Eliminar este producto?')) { db.productos = db.productos.filter(x => x.id !== id); salvar(); initApp(); toast('Producto eliminado 🗑️'); } }
+
+        function renderStockAdmin() {
+            const b = document.getElementById('tbody-admin');
+            b.innerHTML = db.productos.map(p => {
+                let imgT = p.colores[0] && p.colores[0].img ? p.colores[0].img : getPlaceholder('SKU '+p.sku);
+                return `
+                <tr class="hover:bg-stone-50 transition">
+                    <td class="px-4 py-3"><img src="${imgT}" class="w-10 h-10 object-cover rounded border border-brand-border shadow-sm"></td>
+                    <td class="px-4 py-3 font-mono text-xs font-bold">${p.sku}</td>
+                    <td class="px-4 py-3 font-medium text-xs leading-tight line-clamp-2">${p.nombre}</td>
+                    <td class="px-4 py-3 font-bold text-brand-accent">${formatMoney(p.precioBase)}</td>
+                    <td class="px-4 py-3 text-[10px] text-gray-500 leading-tight"><b>C:</b> ${p.colores.map(c=>c.nombre).join(', ')}</td>
+                    <td class="px-4 py-3 text-right space-x-2">
+                        <button onclick="abrirModalEdicion('${p.id}')" class="text-brand-accent hover:opacity-70 bg-stone-100 px-2 py-1 rounded" title="Editar"><i class="fas fa-pencil-alt"></i></button>
+                        <button onclick="eliminarProducto('${p.id}')" class="text-red-500 hover:opacity-70 bg-red-50 px-2 py-1 rounded" title="Eliminar"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function cerrarSesion() { 
+            document.body.classList.remove('modo-admin'); 
+            localStorage.removeItem('hippie_admin_auth'); // MODO DIOS OFF
+            toast('🔒 Sesión cerrada');
+        }
+        function vaciarDB() { if(confirm('¿Seguro querés vaciar todo?')) { db.productos=[]; salvar(); initApp(); toast('Base vaciada.'); } }
+        function toast(m) { const c=document.getElementById('toast-container'), d=document.createElement('div'); d.className='toast'; d.innerHTML=`<i class="fas fa-info-circle mr-2"></i> ${m}`; c.appendChild(d); setTimeout(()=>{ d.style.animation='slideIn 0.3s reverse forwards'; setTimeout(()=>d.remove(),300); }, 3500); }
+        
+        // Anti-curiosos
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.onkeydown = function(e) {
+            if(e.keyCode == 123) { return false; } // F12
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 73) { return false; } // Ctrl+Shift+I
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 74) { return false; } // Ctrl+Shift+J
+            if(e.ctrlKey && e.keyCode == 85) { return false; } // Ctrl+U
+            if(e.ctrlKey && e.keyCode == 83) { return false; } // Ctrl+S
+        }
+    </script>
+</body>
+</html>
