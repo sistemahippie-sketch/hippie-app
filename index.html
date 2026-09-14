@@ -6,10 +6,10 @@
     <title id="page-title">Catálogo Mayorista</title>
     
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.json?v=2">
+    <link rel="manifest" href="manifest.json?v=3">
     <meta name="theme-color" content="#F9F6F0">
-    <link rel="icon" type="image/png" sizes="192x192" href="/icono-192x192.png?v=2">
-    <link rel="apple-touch-icon" href="/icono-192x192.png?v=2">
+    <link rel="icon" type="image/png" sizes="192x192" href="icono-192x192.png?v=3">
+    <link rel="apple-touch-icon" href="icono-192x192.png?v=3">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -99,7 +99,7 @@
         <div id="pwa-install-banner" class="hidden bg-brand-accent/10 border border-brand-accent/30 rounded-2xl p-4 mx-6 mt-4 flex items-center justify-between fade-in shadow-sm max-w-7xl lg:mx-auto">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-brand-accent text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-sm">
-                    <img src="/icono-192x192.png?v=2" class="w-full h-full object-cover rounded-xl" onerror="this.outerHTML='<i class=\'fas fa-mobile-alt\'></i>'">
+                    <img src="icono-192x192.png?v=3" class="w-full h-full object-cover rounded-xl" onerror="this.outerHTML='<i class=&quot;fas fa-mobile-alt&quot;></i>'">
                 </div>
                 <div>
                     <h4 class="text-xs font-bold text-brand-text">Instalar Aplicación</h4>
@@ -389,6 +389,15 @@
     <div id="toast-container"></div>
 
     <script>
+        // SISTEMA ANTI-ROTO NIVEL DIOS
+        window.manejarErrorLogo = function() {
+            const headerBranding = document.getElementById('header-branding');
+            if(!headerBranding) return;
+            const palabras = (db.config.nombre || 'Hippie Jaipur').trim().split(' ');
+            let htmlLogo = palabras.length > 1 ? `<span class="block">${palabras[0]}</span><span class="block text-[0.65em] opacity-90">${palabras.slice(1).join(' ')}</span>` : `<span class="block">${palabras[0]}</span>`;
+            headerBranding.innerHTML = `<div class="font-serif font-black uppercase text-brand-text leading-none text-center border-y-2 border-brand-text py-1.5 px-2 tracking-widest text-xl mr-3 shrink-0">${htmlLogo}</div><div><h1 class="font-serif text-2xl text-brand-text leading-none">${db.config.nombre}</h1><span class="text-[10px] uppercase tracking-widest text-brand-text/60 font-bold">Venta Mayorista</span></div>`;
+        }
+
         // Función Manual de Uso Acordeón
         function toggleManualUso() {
             const cont = document.getElementById('contenido-manual');
@@ -539,9 +548,8 @@
             if(!db.config) db.config = {};
             
             // HARDCODE ABSOLUTO DE MARCA PARA HIPPIE JAIPUR
-            // SE AGREGO ?v=2 PARA ROMPER LA CACHÉ
             db.config.nombre = 'Hippie Jaipur';
-            db.config.logo = '/icono-192x192.png?v=2';
+            db.config.logo = 'icono-192x192.png?v=3';
             
             if(!db.config.paleta) db.config.paleta = 'suede';
             if(!db.config.pinAdmin) db.config.pinAdmin = '1234';
@@ -582,7 +590,7 @@
 
         function salvar() {
             db.config.nombre = 'Hippie Jaipur';
-            db.config.logo = '/icono-192x192.png?v=2';
+            db.config.logo = 'icono-192x192.png?v=3';
             
             localforage.setItem('gesto_hippie_idb', db).then(() => {
                 if(typeof firestoreDb !== 'undefined' && firestoreDb) {
@@ -612,7 +620,7 @@
                     if(doc.exists) { 
                         db = doc.data();
                         db.config.nombre = 'Hippie Jaipur';
-                        db.config.logo = '/icono-192x192.png?v=2';
+                        db.config.logo = 'icono-192x192.png?v=3';
                         actualizarIdentidadVisual();
                         renderProductos(); renderStockAdmin();
                     }
@@ -634,11 +642,10 @@
             const headerBranding = document.getElementById('header-branding');
             
             if(db.config.logo && db.config.logo.length > 5) {
-                headerBranding.innerHTML = `<div class="w-12 h-12 rounded-full border-2 border-brand-border flex items-center justify-center overflow-hidden bg-brand-bg mr-3 shrink-0"><img src="${db.config.logo}" class="w-full h-full object-cover bg-white"></div><div><h1 class="font-serif text-2xl text-brand-text leading-none">${db.config.nombre}</h1><span class="text-[10px] uppercase tracking-widest text-brand-text/60 font-bold">Venta Mayorista</span></div>`;
+                // Si la imagen falla por culpa de la red o Vercel, ejecuta el salvavidas (manejarErrorLogo)
+                headerBranding.innerHTML = `<div class="w-12 h-12 rounded-full border-2 border-brand-border flex items-center justify-center overflow-hidden bg-brand-bg mr-3 shrink-0"><img src="${db.config.logo}" class="w-full h-full object-cover bg-white" onerror="manejarErrorLogo()"></div><div><h1 class="font-serif text-2xl text-brand-text leading-none">${db.config.nombre}</h1><span class="text-[10px] uppercase tracking-widest text-brand-text/60 font-bold">Venta Mayorista</span></div>`;
             } else {
-                const palabras = db.config.nombre.trim().split(' ');
-                let htmlLogo = palabras.length > 1 ? `<span class="block">${palabras[0]}</span><span class="block text-[0.65em] opacity-90">${palabras.slice(1).join(' ')}</span>` : `<span class="block">${palabras[0]}</span>`;
-                headerBranding.innerHTML = `<div class="font-serif font-black uppercase text-brand-text leading-none text-center border-y-2 border-brand-text py-1.5 px-2 tracking-widest text-xl">${htmlLogo}</div><div class="ml-3 pl-3 border-l border-brand-border flex items-center"><span class="text-[9px] uppercase tracking-widest text-brand-text/60 font-bold leading-tight">Venta<br>Mayorista</span></div>`;
+                manejarErrorLogo();
             }
             
             document.getElementById('select-paleta').value = db.config.paleta;
