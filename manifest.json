@@ -1,0 +1,20 @@
+{
+  "name": "Hippie Jaipur Mayorista",
+  "short_name": "Hippie Jaipur",
+  "start_url": "/?vista=tienda",
+  "display": "standalone",
+  "background_color": "#F9F6F0",
+  "theme_color": "#F9F6F0",
+  "icons": [
+    {
+      "src": "/icono-192x192.png?v=2",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icono-512x512.png?v=2",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
