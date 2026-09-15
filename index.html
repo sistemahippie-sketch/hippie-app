@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="page-title">Catálogo</title>
+    <title id="page-title">Catálogo Mayorista</title>
     
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/manifest.json?v=2">
     <meta name="theme-color" content="#F9F6F0">
-    <link rel="icon" type="image/png" sizes="192x192" href="/icono-192x192.png">
-    <link rel="apple-touch-icon" href="/icono-192x192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icono-192x192.png?v=2">
+    <link rel="apple-touch-icon" href="/icono-192x192.png?v=2">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,9 +18,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     
     <script>
         tailwind.config = {
@@ -90,7 +87,7 @@
     </div>
 
     <!-- Botón Volver Arriba -->
-    <button id="btn-subir" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-6 right-6 bg-brand-accent hover:opacity-90 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.4)] transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none z-[90000]">
+    <button id="btn-subir" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-24 right-6 bg-brand-accent hover:opacity-90 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.4)] transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none z-[90000]">
         <i class="fas fa-chevron-up text-xl"></i>
     </button>
 
@@ -98,10 +95,11 @@
     <!-- 1. VISTA TIENDA -->
     <!-- ============================================== -->
     <div id="vista-tienda" class="flex-grow">
+        <!-- BANNER PWA -->
         <div id="pwa-install-banner" class="hidden bg-brand-accent/10 border border-brand-accent/30 rounded-2xl p-4 mx-6 mt-4 flex items-center justify-between fade-in shadow-sm max-w-7xl lg:mx-auto">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-brand-accent text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-sm">
-                    <i class="fas fa-mobile-alt"></i>
+                    <img src="/icono-192x192.png?v=2" class="w-full h-full object-cover rounded-xl" onerror="this.outerHTML='<i class=\'fas fa-mobile-alt\'></i>'">
                 </div>
                 <div>
                     <h4 class="text-xs font-bold text-brand-text">Instalar Aplicación</h4>
@@ -118,11 +116,12 @@
                 <div id="header-branding" class="flex items-center select-none"></div>
                 
                 <div class="flex items-center gap-3">
-                    <button onclick="compartirTienda()" class="text-brand-text/50 hover:text-brand-accent text-lg transition bg-brand-bg w-10 h-10 rounded-full flex items-center justify-center border border-brand-border shadow-sm">
+                    <button onclick="compartirTienda()" class="text-brand-text/50 hover:text-brand-accent text-lg transition bg-brand-bg w-10 h-10 rounded-full flex items-center justify-center border border-brand-border shadow-sm" title="Compartir Catálogo">
                         <i class="fas fa-share-alt"></i>
                     </button>
-                    <button onclick="abrirModalAdmin()" class="text-brand-text/50 hover:text-brand-accent text-xs transition bg-brand-bg w-10 h-10 rounded-full flex items-center justify-center border border-brand-border shadow-sm">
-                        <i class="fas fa-lock"></i>
+                    <!-- BOTÓN ADMIN MEJORADO PARA DUEÑAS TERCAS -->
+                    <button onclick="abrirModalAdmin()" class="text-brand-accent hover:opacity-80 text-xs font-bold transition bg-brand-bg px-3 py-2 h-10 rounded-full flex items-center justify-center border border-brand-border shadow-sm gap-2" title="Panel Admin">
+                        <i class="fas fa-lock"></i> <span class="hidden sm:inline">Admin</span>
                     </button>
                 </div>
             </div>
@@ -140,6 +139,7 @@
             <div id="grid-productos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5"></div>
         </main>
         
+        <!-- FOOTER MARCA GESTO SMART -->
         <footer class="py-6 text-center mt-auto border-t border-brand-border/30 bg-brand-bg">
             <div class="flex items-center justify-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity cursor-default">
                 <span class="text-[11px] text-brand-text font-medium tracking-wide">creado con</span>
@@ -158,15 +158,16 @@
             <div class="w-full md:w-1/2 bg-stone-100 flex items-center justify-center border-b md:border-b-0 md:border-r border-brand-border relative overflow-hidden">
                 <img id="qv-img" src="" class="w-full h-64 md:h-full object-cover">
             </div>
-            <div class="w-full md:w-1/2 p-6 md:p-8 flex flex-col gap-4 bg-brand-bg overflow-y-auto">
+            <div class="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-between gap-4 bg-brand-bg overflow-y-auto">
                 <div>
                     <span id="qv-sku" class="text-[10px] bg-white border border-brand-border text-brand-text px-2 py-0.5 rounded font-bold uppercase mb-2 inline-block shadow-sm"></span>
-                    <h3 id="qv-nombre" class="font-serif text-2xl md:text-3xl font-black text-brand-text leading-tight"></h3>
+                    <h3 id="qv-nombre" class="font-serif text-2xl md:text-3xl font-black text-brand-text leading-tight mb-4"></h3>
                 </div>
 
-                <div id="qv-colores-container" class="mt-2 mb-4"></div>
+                <div id="qv-colores-container" class="my-auto"></div>
 
-                <div class="mt-auto pt-6 border-t border-brand-border flex justify-end">
+                <div class="pt-6 border-t border-brand-border flex items-center justify-between">
+                    <span class="text-xs font-bold text-brand-text/70 uppercase">Precio Mayorista:</span>
                     <span id="qv-precio" class="text-3xl font-black text-brand-accent font-sans"></span>
                 </div>
             </div>
@@ -191,39 +192,77 @@
     <!-- 2. VISTA ADMIN -->
     <!-- ============================================== -->
     <div id="vista-admin" class="flex-grow">
-        <header class="bg-white border-b border-brand-border px-6 py-4 flex flex-col md:flex-row justify-between items-center shadow-sm gap-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-brand-accent text-white rounded-lg flex items-center justify-center text-lg"><i class="fas fa-sliders-h"></i></div>
+        <header class="bg-white border-b border-brand-border px-6 py-4 flex flex-col md:flex-row items-start md:items-center justify-between shadow-sm gap-4">
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <div class="w-10 h-10 bg-brand-accent text-white rounded-lg flex items-center justify-center text-lg shrink-0"><i class="fas fa-sliders-h"></i></div>
                 <div>
-                    <h2 class="font-serif text-xl text-brand-text leading-tight">Panel de Control de Tienda</h2>
-                    <span class="text-[10px] text-brand-text/60 font-bold uppercase tracking-widest">Configuración General y Matriz</span>
+                    <h2 class="font-serif text-xl text-brand-text leading-tight">Panel de Control</h2>
+                    <span class="text-[10px] text-brand-text/60 font-bold uppercase tracking-widest">Configuración General</span>
                 </div>
             </div>
-            <div class="flex gap-2">
-                <button onclick="compartirTienda()" class="bg-stone-100 hover:bg-stone-200 text-brand-text border border-brand-border px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
-                    <i class="fas fa-share-alt mr-2 text-brand-accent"></i> Compartir Link
+            <div class="flex flex-wrap gap-2 w-full md:w-auto mt-2 md:mt-0">
+                <button onclick="compartirTienda()" class="bg-brand-bg hover:bg-stone-200 text-brand-text border border-brand-border px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+                    <i class="fas fa-share-alt mr-2 text-brand-accent"></i> Compartir
                 </button>
-                <button onclick="verTiendaNuevaPestana()" class="bg-stone-100 hover:bg-stone-200 text-brand-text border border-brand-border px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
-                    <i class="fas fa-external-link-alt mr-2 text-brand-accent"></i> Ver Tienda ↗
+                <button onclick="abrirTiendaNuevaPestana()" class="bg-stone-100 hover:bg-stone-200 text-brand-text border border-brand-border px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+                    <i class="fas fa-external-link-alt mr-2 text-brand-accent"></i> Ver Tienda
                 </button>
-                <button onclick="cerrarSesion()" class="bg-brand-accent text-white px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
-                    <i class="fas fa-sign-out-alt mr-2"></i> Salir del Admin
+                <button onclick="cerrarSesion()" class="bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center shadow-sm">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Salir
                 </button>
             </div>
         </header>
 
         <main class="flex-1 max-w-7xl mx-auto w-full p-6 space-y-6 flex-grow">
+            
+            <!-- ACORDEÓN / BOTÓN MANUAL DE USO DIVIDIDO EN 4 -->
+            <div class="bg-brand-accent/5 border border-brand-accent/30 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center justify-between cursor-pointer" onclick="toggleManualUso()">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-brand-accent text-white rounded-lg flex items-center justify-center text-lg shadow-sm">
+                            <i class="fas fa-book-reader"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-serif text-lg text-brand-accent font-bold">📖 Manual de Uso Rápido (¡Leé esto antes de usar!)</h3>
+                            <p class="text-xs text-brand-text/70">Guía paso a paso para no cometer errores en la carga o al compartir.</p>
+                        </div>
+                    </div>
+                    <button class="text-brand-accent text-lg font-bold px-3 py-1 bg-white border border-brand-accent/30 rounded-lg shadow-sm">
+                        <i class="fas fa-chevron-down" id="icono-manual-flecha"></i>
+                    </button>
+                </div>
+
+                <div id="contenido-manual" class="hidden mt-6 pt-6 border-t border-brand-accent/20 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-brand-text">
+                    <div class="bg-white p-5 rounded-xl border border-brand-border shadow-sm space-y-3">
+                        <div class="w-8 h-8 rounded-full bg-brand-accent text-white flex items-center justify-center font-bold">1</div>
+                        <h4 class="font-bold text-sm text-brand-accent">El Excel y los COLORES (¡Muy Importante!)</h4>
+                        <p class="text-brand-text/80 leading-relaxed">Descargá la plantilla con "Bajar Plantilla". Cargá SKU, PRODUCTO y PRECIO. <b>Si el zapato tiene variantes, es OBLIGATORIO escribirlas en la columna COLORES</b> separadas por coma (ej: <i>Negro, Suela, Nude</i>). Si no las escribís ahí, la clienta no podrá elegir el color al querer comprar.</p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-brand-border shadow-sm space-y-3">
+                        <div class="w-8 h-8 rounded-full bg-brand-accent text-white flex items-center justify-center font-bold">2</div>
+                        <h4 class="font-bold text-sm text-brand-accent">Opción A: Cargar fotos a mano (Recomendado)</h4>
+                        <p class="text-brand-text/80 leading-relaxed">¿No querés renegar con los nombres de los archivos? Hacé clic en el ícono del <b>Lápiz (Editar)</b> <i class="fas fa-pencil-alt text-brand-accent mx-1"></i> al lado de cualquier producto en la lista de abajo. Se abrirá una ventana donde podrás subir y cambiar la foto exacta de cada color individualmente haciendo clic en <b>"Subir Foto"</b>.</p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-brand-border shadow-sm space-y-3">
+                        <div class="w-8 h-8 rounded-full bg-brand-accent text-white flex items-center justify-center font-bold">3</div>
+                        <h4 class="font-bold text-sm text-brand-accent">Opción B: Subida Rápida (Masiva)</h4>
+                        <p class="text-brand-text/80 leading-relaxed">Si querés subir todo de golpe con el botón "Subir Fotos", las imágenes en tu compu <b>DEBEN</b> llamarse igual que el código SKU y el color.<br><br><i>Ejemplo si el SKU es 5:</i><br>• <code>5 negro.jpg</code><br>• <code>5 animal print.jpg</code></p>
+                    </div>
+
+                    <div class="bg-brand-accent/10 p-5 rounded-xl border border-brand-accent/30 shadow-sm space-y-3">
+                        <div class="w-8 h-8 rounded-full bg-brand-accent text-white flex items-center justify-center font-bold"><i class="fas fa-share-alt"></i></div>
+                        <h4 class="font-bold text-sm text-brand-accent">⚠️ Cómo compartir tu Catálogo</h4>
+                        <p class="text-brand-text/80 leading-relaxed">Para enviarle la tienda a tus clientes, <b>USÁ SIEMPRE EL BOTÓN "COMPARTIR"</b> que está arriba en este panel. Ese botón envía el link público y limpio a tus clientas.<br><br><b>NUNCA copies el link de la barra de arriba del navegador</b> porque les estarías mandando el link privado que pide contraseña.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN SEGURIDAD (BLINDADA PARA EL CLIENTE) -->
             <div class="bg-white border border-brand-border rounded-xl p-6 shadow-sm space-y-4">
                 <h3 class="font-serif text-lg text-brand-text">⚙️ Identidad y Seguridad</h3>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-brand-text/70 mb-1">Nombre Tienda</label>
-                        <input type="text" id="input-nombre-tienda" class="w-full border border-brand-border p-2.5 rounded-lg text-sm outline-none focus:border-brand-accent">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-brand-text/70 mb-1">Logo (Opcional)</label>
-                        <input type="file" id="input-logo" accept="image/*" class="w-full text-xs text-brand-text file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:font-bold file:bg-brand-bg file:text-brand-text hover:file:bg-brand-border cursor-pointer transition outline-none" onchange="subirLogoApp(event)">
-                    </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg">
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-brand-text/70 mb-1">Paleta Color</label>
                         <select id="select-paleta" class="w-full border border-brand-border p-2.5 rounded-lg text-sm outline-none focus:border-brand-accent bg-white">
@@ -231,7 +270,6 @@
                             <option value="terracota">Warm Terracotta (Terracota)</option>
                             <option value="olive">Olive Green (Verde Oliva)</option>
                             <option value="yute">Creamy Jute (Yute/Crema)</option>
-                            <option value="rosa">Soft Pink (Rosa)</option>
                         </select>
                     </div>
                     <div>
@@ -239,7 +277,7 @@
                         <input type="password" id="input-pin" maxlength="4" placeholder="1234" class="w-full border border-brand-border p-2.5 rounded-lg text-sm outline-none focus:border-brand-accent text-brand-accent font-bold text-center tracking-widest">
                     </div>
                 </div>
-                <div class="flex justify-end pt-2">
+                <div class="flex justify-start pt-2">
                     <button onclick="guardarConfiguracion()" class="bg-brand-text hover:bg-brand-accent text-white px-6 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition shadow-sm">Guardar Cambios</button>
                 </div>
             </div>
@@ -293,6 +331,7 @@
             </div>
         </main>
         
+        <!-- FOOTER MARCA GESTO SMART ADMIN -->
         <footer class="py-6 text-center mt-auto border-t border-brand-border/50 bg-stone-50">
             <div class="flex items-center justify-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity cursor-default">
                 <span class="text-[11px] text-brand-text font-medium tracking-wide">creado con</span>
@@ -319,7 +358,7 @@
                         <input type="text" id="edit-sku" class="w-full border border-brand-border p-2 rounded-lg text-sm outline-none focus:border-brand-accent font-bold">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-text/70 mb-1">Precio ($) *</label>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-text/70 mb-1">Precio Mayorista ($) *</label>
                         <input type="number" id="edit-precio" class="w-full border border-brand-border p-2 rounded-lg text-sm outline-none focus:border-brand-accent">
                     </div>
                 </div>
@@ -350,18 +389,30 @@
     <div id="toast-container"></div>
 
     <script>
+        // Función Manual de Uso Acordeón
+        function toggleManualUso() {
+            const cont = document.getElementById('contenido-manual');
+            const icono = document.getElementById('icono-manual-flecha');
+            if (cont.classList.contains('hidden')) {
+                cont.classList.remove('hidden');
+                icono.classList.remove('fa-chevron-down');
+                icono.classList.add('fa-chevron-up');
+            } else {
+                cont.classList.add('hidden');
+                icono.classList.remove('fa-chevron-up');
+                icono.classList.add('fa-chevron-down');
+            }
+        }
+
+        // Modal Utilities
         function abrirModalUI(id) { const el = document.getElementById(id); if(el){ el.classList.remove('hidden'); el.classList.add('flex'); } }
         function cerrarModal(id) { const el = document.getElementById(id); if(el){ el.classList.add('hidden'); el.classList.remove('flex'); } }
-
-        function verTiendaNuevaPestana() {
-            window.open(window.location.href.split('?')[0], '_blank');
-        }
 
         function compartirTienda() {
             const shareData = {
                 title: db.config.nombre || 'Mi Tienda',
                 text: `Mirá nuestro catálogo online:`,
-                url: window.location.href.split('?')[0]
+                url: window.location.href.split('?')[0] // SIEMPRE COMPARTE LIMPIO SIN ?admin
             };
             if (navigator.share) {
                 navigator.share(shareData).catch(() => {});
@@ -369,6 +420,12 @@
                 navigator.clipboard.writeText(window.location.href.split('?')[0]);
                 toast('¡Link del catálogo copiado!');
             }
+        }
+
+        function abrirTiendaNuevaPestana() {
+            // Se le agrega un parámetro especial para evitar que el Modo Dios la vuelva a meter al admin
+            const urlBase = window.location.href.split('?')[0];
+            window.open(urlBase + '?vista=tienda', '_blank');
         }
 
         function abrirModalAdmin() {
@@ -387,6 +444,10 @@
             if (pin === pinValido) {
                 cerrarModalLogin();
                 document.body.classList.add('modo-admin');
+                
+                // MODO DIOS: GUARDA LA SESIÓN EN ESTE DISPOSITIVO
+                localStorage.setItem('hippie_admin_auth', 'true');
+                
                 toast('🔓 Modo Administrador Activado');
             } else {
                 toast('❌ PIN Incorrecto');
@@ -420,6 +481,7 @@
             });
         }
 
+        // Flecha de Scroll Automática
         window.addEventListener('scroll', () => {
             const btn = document.getElementById('btn-subir');
             if (window.scrollY > 300) {
@@ -460,38 +522,53 @@
         }
 
         const limpiarTexto = (str) => { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[-_\s]+/g, ''); };
+        const toConsonants = (str) => { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[aeiouáéíóúü\s-_\W]/g, ''); };
 
         const paletasPantone = {
             suede: { bg: '#F2E8DA', text: '#593C31', accent: '#7B3F32', border: '#DFD0BB' },
             terracota: { bg: '#FDF8F5', text: '#B35A49', accent: '#D97757', border: '#E8D4CE' },
             olive: { bg: '#F4F5F0', text: '#5A6039', accent: '#8A915C', border: '#D5D8C8' },
-            yute: { bg: '#FAF6F0', text: '#4A3B32', accent: '#CB6D3E', border: '#E6DFD5' },
-            rosa: { bg: '#FEF4F8', text: '#524047', accent: '#F4A2CD', border: '#F0D5E1' }
+            yute: { bg: '#FAF6F0', text: '#4A3B32', accent: '#CB6D3E', border: '#E6DFD5' }
         };
 
-        let db = { config: { nombre: 'Hippie Zapatos', whatsapp: '5491121586674', paleta: 'suede', logo: '', pinAdmin: '1234' }, productos: [] };
+        let db = { config: {}, productos: [] };
         let seleccionActual = {}; 
 
         function initApp() {
             document.getElementById('carga-overlay').style.display = 'none';
-            if(!db.config) db.config = { nombre: 'Hippie Zapatos', whatsapp: '5491121586674', paleta: 'suede', logo: '', pinAdmin: '1234' };
-            if(db.config.logo === undefined) db.config.logo = '';
+            if(!db.config) db.config = {};
+            
+            // HARDCODE ABSOLUTO DE MARCA PARA HIPPIE JAIPUR
+            db.config.nombre = 'Hippie Jaipur';
+            db.config.logo = '/icono-192x192.png?v=2';
+            
+            if(!db.config.paleta) db.config.paleta = 'suede';
             if(!db.config.pinAdmin) db.config.pinAdmin = '1234';
             
             if(db.productos.length === 0) {
                 db.productos = [
                     { id: '1', sku: '4', nombre: 'Zueco Roma', precioBase: 69900, colores: [{ id: 'c0', nombre: 'Nude', img: '' }, { id: 'c1', nombre: 'Negro', img: '' }] },
-                    { id: '2', sku: '5', nombre: 'Sandalia Tulum', precioBase: 59999, colores: [{ id: 'c0', nombre: 'Negro', img: '' }, { id: 'c1', nombre: 'Animal Print', img: '' }] }
+                    { id: '2', sku: '5', nombre: 'Sandalia Tulum', precioBase: 59999, colores: [{ id: 'c0', nombre: 'Negro', img: '' }, { id: 'c1', nombre: 'Animal Print', img: '' }, { id: 'c2', nombre: 'Rafia', img: '' }, { id: 'c4', nombre: 'Suela', img: '' }, { id: 'c5', nombre: 'Plateado', img: '' }] }
                 ];
             }
 
             actualizarIdentidadVisual();
             db.productos.forEach(p => {
                 if(p.colores && p.colores.length > 0) {
-                    if(!seleccionActual[p.id]) seleccionActual[p.id] = { color: p.colores[0].id, qty: 1 };
+                    if(!seleccionActual[p.id]) seleccionActual[p.id] = { color: p.colores[0].id };
                 }
             });
             renderProductos(); renderStockAdmin();
+
+            // CHEQUEO MODO DIOS O LINK MÁGICO Y PASE VIP
+            if (window.location.search.includes('vista=tienda')) {
+                // Modo espectador: ignorar auto-login de Modo Dios para que pueda ver su tienda
+                document.body.classList.remove('modo-admin');
+            } else if (localStorage.getItem('hippie_admin_auth') === 'true') {
+                document.body.classList.add('modo-admin');
+            } else if (window.location.search.includes('admin')) {
+                abrirModalAdmin();
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -503,9 +580,12 @@
         });
 
         function salvar() {
+            db.config.nombre = 'Hippie Jaipur';
+            db.config.logo = '/icono-192x192.png?v=2';
+            
             localforage.setItem('gesto_hippie_idb', db).then(() => {
                 if(typeof firestoreDb !== 'undefined' && firestoreDb) {
-                    // DOCUMENTO AISLADO PARA HIPPIE
+                    // AQUÍ ESTÁ EL CAMBIO CRÍTICO: .doc("catalogo_hippie")
                     firestoreDb.collection("lite_erp").doc("catalogo_hippie").set(db).catch(e => console.error("Error Firebase:", e));
                 }
             }).catch(function(err) { toast("❌ Error al guardar base de datos."); });
@@ -513,12 +593,12 @@
 
         // Firebase Sync
         const firebaseConfig = {
-            apiKey: "AIzaSyBzgIYRyMFLL616w_OhOO_dC6bR7df5kCI",
-            authDomain: "catalogo-sami.firebaseapp.com",
-            projectId: "catalogo-sami",
-            storageBucket: "catalogo-sami.firebasestorage.app",
-            messagingSenderId: "82548197889",
-            appId: "1:82548197889:web:50330ffc4b55d640ef8e00"
+            apiKey: "AIzaSyAUigoEaedboUV_dIcD1k-MYgZuFa1nWKE",
+            authDomain: "catalogo-hippie.firebaseapp.com",
+            projectId: "catalogo-hippie",
+            storageBucket: "catalogo-hippie.firebasestorage.app",
+            messagingSenderId: "99839074190",
+            appId: "1:99839074190:web:d70c4f09c5577bcc100edf"
         };
         
         let firestoreDb = null;
@@ -528,10 +608,12 @@
                 firestoreDb = firebase.firestore(); 
                 firebase.auth().signInAnonymously().catch(err => console.warn("Error en Auth:", err));
                 
-                // ESCUCHA EN catalogo_hippie
+                // AQUÍ ESTÁ EL SEGUNDO CAMBIO CRÍTICO: .doc("catalogo_hippie")
                 firestoreDb.collection("lite_erp").doc("catalogo_hippie").onSnapshot(doc => {
                     if(doc.exists) { 
                         db = doc.data();
+                        db.config.nombre = 'Hippie Jaipur';
+                        db.config.logo = '/icono-192x192.png?v=2';
                         actualizarIdentidadVisual();
                         renderProductos(); renderStockAdmin();
                     }
@@ -549,29 +631,22 @@
 
         function actualizarIdentidadVisual() {
             aplicarPaleta(db.config.paleta);
-            document.getElementById('page-title').innerText = `${db.config.nombre} | Catálogo`;
+            document.getElementById('page-title').innerText = `${db.config.nombre} | Catálogo Mayorista`;
             const headerBranding = document.getElementById('header-branding');
             
-            if(db.config.logo && db.config.logo.length > 100) {
-                headerBranding.innerHTML = `<div class="w-12 h-12 rounded-full border-2 border-brand-border flex items-center justify-center overflow-hidden bg-brand-bg mr-3 shrink-0"><img src="${db.config.logo}" class="w-full h-full object-cover bg-white"></div><div><h1 class="font-serif text-2xl text-brand-text leading-none">${db.config.nombre}</h1></div>`;
+            if(db.config.logo && db.config.logo.length > 5) {
+                headerBranding.innerHTML = `<div class="w-12 h-12 rounded-full border-2 border-brand-border flex items-center justify-center overflow-hidden bg-brand-bg mr-3 shrink-0"><img src="${db.config.logo}" class="w-full h-full object-cover bg-white"></div><div><h1 class="font-serif text-2xl text-brand-text leading-none">${db.config.nombre}</h1><span class="text-[10px] uppercase tracking-widest text-brand-text/60 font-bold">Venta Mayorista</span></div>`;
             } else {
                 const palabras = db.config.nombre.trim().split(' ');
                 let htmlLogo = palabras.length > 1 ? `<span class="block">${palabras[0]}</span><span class="block text-[0.65em] opacity-90">${palabras.slice(1).join(' ')}</span>` : `<span class="block">${palabras[0]}</span>`;
-                headerBranding.innerHTML = `<div class="font-serif font-black uppercase text-brand-text leading-none text-center border-y-2 border-brand-text py-1.5 px-2 tracking-widest text-xl">${htmlLogo}</div>`;
+                headerBranding.innerHTML = `<div class="font-serif font-black uppercase text-brand-text leading-none text-center border-y-2 border-brand-text py-1.5 px-2 tracking-widest text-xl">${htmlLogo}</div><div class="ml-3 pl-3 border-l border-brand-border flex items-center"><span class="text-[9px] uppercase tracking-widest text-brand-text/60 font-bold leading-tight">Venta<br>Mayorista</span></div>`;
             }
             
-            document.getElementById('input-nombre-tienda').value = db.config.nombre;
             document.getElementById('select-paleta').value = db.config.paleta;
             document.getElementById('input-pin').value = db.config.pinAdmin || '1234';
         }
 
-        function subirLogoApp(e) {
-            const file = e.target.files[0]; if(!file) return;
-            comprimirImagen(file, (base64) => { db.config.logo = base64; salvar(); actualizarIdentidadVisual(); toast('Logo actualizado 🎨'); }, 300, 'image/png');
-        }
-
         function guardarConfiguracion() {
-            db.config.nombre = document.getElementById('input-nombre-tienda').value.trim() || 'Tienda';
             db.config.paleta = document.getElementById('select-paleta').value;
             db.config.pinAdmin = document.getElementById('input-pin').value.trim() || '1234';
             salvar(); actualizarIdentidadVisual(); toast('¡Configuración guardada! ✨');
@@ -579,7 +654,6 @@
 
         const formatMoney = (monto) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(monto);
 
-        // --- QUICK VIEW ---
         function abrirQuickView(id) {
             const p = db.productos.find(x => x.id === id); if(!p) return;
             const state = seleccionActual[id] || { color: p.colores[0].id };
@@ -624,14 +698,13 @@
             if(labelEl) labelEl.innerText = colorNombre;
         }
 
-        // --- RENDER TIENDA ---
         function renderProductos() {
             const grid = document.getElementById('grid-productos');
             const term = document.getElementById('buscador').value.toLowerCase();
             const filtrados = db.productos.filter(p => p.nombre.toLowerCase().includes(term) || p.sku.toLowerCase().includes(term));
 
             grid.innerHTML = filtrados.length ? filtrados.map(p => {
-                if(!seleccionActual[p.id]) seleccionActual[p.id] = { color: p.colores[0].id, qty: 1 };
+                if(!seleccionActual[p.id]) seleccionActual[p.id] = { color: p.colores[0].id };
                 const state = seleccionActual[p.id]; const colorActivo = p.colores.find(c => c.id === state.color) || p.colores[0];
                 let imgFinal = colorActivo.img; let phText = 'SKU ' + p.sku;
                 if (colorActivo.nombre !== 'General') phText += ' ' + colorActivo.nombre;
@@ -669,7 +742,7 @@
                         </div>
 
                         <div>
-                            <div class="mb-2 flex items-center justify-between border-t border-brand-border pt-2">
+                            <div class="mb-1 flex items-center justify-between border-t border-brand-border pt-3">
                                 <span class="text-[10px] font-bold text-gray-400 uppercase">Precio</span>
                                 <span class="text-base font-black text-brand-accent">${formatMoney(p.precioBase)}</span>
                             </div>
@@ -688,11 +761,19 @@
             const labelEl = document.getElementById(`label-color-${prodId}`); if(labelEl) labelEl.innerText = colorNombre;
         }
 
+        function generarExcelMuestra() {
+            const data = [{ "SKU": "4", "PRODUCTO": "Zueco Roma", "PRECIO": 69900, "COLORES": "Nude, Negro" }];
+            const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(data);
+            ws['!cols'] = [{wch:10}, {wch:40}, {wch:12}, {wch:25}];
+            XLSX.utils.book_append_sheet(wb, ws, "Catalogo"); XLSX.writeFile(wb, "Plantilla_Catalogo.xlsx");
+        }
+
         function subirFotosMasivas(e) {
             const files = e.target.files; if(!files.length) return;
             document.getElementById('carga-texto').innerText = "Procesando " + files.length + " fotos...";
             document.getElementById('carga-overlay').style.display='flex';
             let cargadas = 0; let vinculadas = 0;
+            
             const prodsSorted = [...db.productos].sort((a,b) => String(b.sku).length - String(a.sku).length);
 
             Array.from(files).forEach(file => {
@@ -702,23 +783,45 @@
 
                     for (let p of prodsSorted) {
                         let skuLower = String(p.sku).trim().toLowerCase();
+                        
                         if (nombreLimpio === skuLower || nombreLimpio.startsWith(skuLower + '-') || nombreLimpio.startsWith(skuLower + ' ') || nombreLimpio.startsWith(skuLower + '_')) {
-                            let resto = nombreLimpio.substring(skuLower.length).trim().replace(/^[-_\s]+/, ''); 
-                            let bestColorIdx = -1; let bestScore = -1;
-                            if (resto === '') { bestColorIdx = 0; } else {
+                            
+                            let resto = nombreLimpio.substring(skuLower.length).trim();
+                            resto = resto.replace(/^[-_\s]+/, ''); 
+                            
+                            let bestColorIdx = -1;
+                            let bestScore = -1;
+
+                            if (resto === '') {
+                                bestColorIdx = 0;
+                            } else {
                                 for (let i = 0; i < p.colores.length; i++) {
-                                    let cClean = limpiarTexto(p.colores[i].nombre); let rClean = limpiarTexto(resto);
+                                    let cClean = limpiarTexto(p.colores[i].nombre);
+                                    let rClean = limpiarTexto(resto);
+
                                     let posIdx = parseInt(resto);
-                                    if (!isNaN(posIdx) && posIdx > 0 && posIdx.toString() === resto) { if(i === posIdx - 1) { bestColorIdx = i; bestScore = 9999; break; } continue; }
+                                    if (!isNaN(posIdx) && posIdx > 0 && posIdx.toString() === resto) {
+                                        if(i === posIdx - 1) { bestColorIdx = i; bestScore = 9999; break; }
+                                        continue;
+                                    }
+
                                     if (cClean === rClean) { bestColorIdx = i; bestScore = 1000; break; }
+
                                     if (rClean.length >= 3 && cClean.length >= 3 && (rClean.includes(cClean) || cClean.includes(rClean))) {
-                                        let score = 500 + cClean.length; if (score > bestScore) { bestColorIdx = i; bestScore = score; }
+                                        let score = 500 + cClean.length; 
+                                        if (score > bestScore) { bestColorIdx = i; bestScore = score; }
                                     }
                                 }
                             }
-                            if (bestColorIdx !== -1) { p.colores[bestColorIdx].img = base64Comprimido; vinculadas++; break; }
+
+                            if (bestColorIdx !== -1) {
+                                p.colores[bestColorIdx].img = base64Comprimido;
+                                vinculadas++;
+                                break; 
+                            }
                         }
                     }
+                    
                     cargadas++; document.getElementById('carga-texto').innerText = "Procesando " + cargadas + " de " + files.length + "...";
                     if(cargadas === files.length) {
                         salvar(); setTimeout(() => { initApp(); document.getElementById('carga-overlay').style.display='none'; document.getElementById('input-fotos-masivas').value = ''; if(vinculadas === 0) toast(`❌ Las fotos no coincidieron con los SKU.`); else toast(`¡Terminado! ${vinculadas} fotos vinculadas 📸`); }, 500);
@@ -759,6 +862,7 @@
             document.getElementById('edit-nombre').value = ''; document.getElementById('edit-precio').value = ''; 
             document.getElementById('grupo-crear-colores').classList.remove('hidden'); document.getElementById('edit-colores-texto').value = 'General';
             document.getElementById('grupo-editar-fotos').classList.add('hidden');
+            
             abrirModalUI('modal-edicion');
         }
 
@@ -782,10 +886,13 @@
                     </div>
                 </div>`;
             }).join('');
+            
             abrirModalUI('modal-edicion');
         }
 
-        function cerrarModalEdicion() { cerrarModal('modal-edicion'); }
+        function cerrarModalEdicion() { 
+            cerrarModal('modal-edicion');
+        }
 
         function subirFotoIndividual(e, prodId, colorIndex) {
             const file = e.target.files[0]; if(!file) return;
@@ -831,10 +938,15 @@
             `}).join('');
         }
 
-        function cerrarSesion() { document.body.classList.remove('modo-admin'); }
+        function cerrarSesion() { 
+            document.body.classList.remove('modo-admin'); 
+            localStorage.removeItem('hippie_admin_auth'); // MODO DIOS OFF
+            toast('🔒 Sesión cerrada');
+        }
         function vaciarDB() { if(confirm('¿Seguro querés vaciar todo?')) { db.productos=[]; salvar(); initApp(); toast('Base vaciada.'); } }
         function toast(m) { const c=document.getElementById('toast-container'), d=document.createElement('div'); d.className='toast'; d.innerHTML=`<i class="fas fa-info-circle mr-2"></i> ${m}`; c.appendChild(d); setTimeout(()=>{ d.style.animation='slideIn 0.3s reverse forwards'; setTimeout(()=>d.remove(),300); }, 3500); }
         
+        // Anti-curiosos
         document.addEventListener('contextmenu', event => event.preventDefault());
         document.onkeydown = function(e) {
             if(e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && (e.keyCode == 85 || e.keyCode == 83))) { return false; }
